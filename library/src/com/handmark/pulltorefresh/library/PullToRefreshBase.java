@@ -194,7 +194,7 @@ public abstract class PullToRefreshBase<T extends View> extends LinearLayout imp
 	}
 
 	@Override
-	public final boolean onInterceptTouchEvent(MotionEvent event) {
+	public boolean onInterceptTouchEvent(MotionEvent event) {
 
 		if (!isPullToRefreshEnabled()) {
 			return false;
@@ -204,7 +204,20 @@ public abstract class PullToRefreshBase<T extends View> extends LinearLayout imp
 
 		if (action == MotionEvent.ACTION_CANCEL || action == MotionEvent.ACTION_UP) {
 			mIsBeingDragged = false;
-			return false;
+			float w = getMeasuredWidth();
+			float diffX = mLastMotionX - event.getX();
+			if (Math.abs(diffX) >= w/3.0f) {
+				if (diffX>0) {
+					//swipe from right to left
+					mOnRefreshListener2.onPullLeft(this);
+					mIsBeingDragged = true;
+				} else {
+					//swipe from left to right
+					mOnRefreshListener2.onPullRight(this);
+					mIsBeingDragged = true;
+				}
+			}
+			return mIsBeingDragged;
 		}
 
 		if (action != MotionEvent.ACTION_DOWN && mIsBeingDragged) {
@@ -245,10 +258,12 @@ public abstract class PullToRefreshBase<T extends View> extends LinearLayout imp
 			case MotionEvent.ACTION_DOWN: {
 				if (isReadyForPull()) {
 					mLastMotionY = mInitialMotionY = event.getY();
-					mLastMotionX = event.getX();
+					//mLastMotionX = event.getX();
 					mIsBeingDragged = false;
 				}
+				mLastMotionX = event.getX();
 				break;
+				
 			}
 		}
 
@@ -263,7 +278,7 @@ public abstract class PullToRefreshBase<T extends View> extends LinearLayout imp
 	}
 
 	@Override
-	public final boolean onTouchEvent(MotionEvent event) {
+	public boolean onTouchEvent(MotionEvent event) {
 
 		if (!isPullToRefreshEnabled()) {
 			return false;
@@ -280,6 +295,9 @@ public abstract class PullToRefreshBase<T extends View> extends LinearLayout imp
 
 		switch (event.getAction()) {
 			case MotionEvent.ACTION_MOVE: {
+//				if (Math.round(Math.min(mInitialMotionY - mLastMotionY, 0) / FRICTION) != 0) {
+//					return false;
+//				}
 				if (mIsBeingDragged) {
 					mLastMotionY = event.getY();
 					pullEvent();
@@ -1227,6 +1245,10 @@ public abstract class PullToRefreshBase<T extends View> extends LinearLayout imp
 		 * from the bottom, and released.
 		 */
 		public void onPullUpToRefresh(final PullToRefreshBase<V> refreshView);
+		
+		
+		public void onPullLeft(final PullToRefreshBase<V> refreshView);
+		public void onPullRight(final PullToRefreshBase<V> refreshView);
 
 	}
 
